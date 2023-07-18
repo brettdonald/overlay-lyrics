@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --fontsize-lyrics: 4vw;
+      --opacity-transition-duration: 200ms;
+    }
+    body {
+      margin: 0;
+      background: #444;
+      font-family: 'Noto Sans', sans-serif;    
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding-bottom: 2.5vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+      align-items: center;
+      color: white;
+      line-height: 1.2;
+      text-shadow:
+        -6px 0 12px rgb(0,0,0,0.7),
+         0px -6px 12px rgb(0,0,0,0.7),
+         0px 6px 12px rgb(0,0,0,0.7),
+         6px 0 12px rgb(0,0,0,0.7);
+    }
+    #background, #lyrics {
+      transition: opacity var(--opacity-transition-duration);
+    }
+    #background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      /* generated using non-boring-gradients.netlify.app using black with opacity 0.95 to
+      black with opacity 0, zero degrees rotation, easeInOutSine, sRGB */
+      background-image: linear-gradient(0deg,
+        rgb(0% 0% 0% / 0.95) 0%,
+        rgb(0% 0% 0% / 0.9408730081915344) 6.25%,
+        rgb(0% 0% 0% / 0.9138427779428612) 12.5%,
+        rgb(0% 0% 0% / 0.869948065843709) 18.75%,
+        rgb(0% 0% 0% / 0.81087572106361) 25%,
+        rgb(0% 0% 0% / 0.738895860684311) 31.25%,
+        rgb(0% 0% 0% / 0.6567746303734177) 37.5%,
+        rgb(0% 0% 0% / 0.5676679029576609) 43.75%,
+        rgb(0% 0% 0% / 0.47500000000000003) 50%,
+        rgb(0% 0% 0% / 0.38233209704233906) 56.25%,
+        rgb(0% 0% 0% / 0.2932253696265824) 62.5%,
+        rgb(0% 0% 0% / 0.21110413931568905) 68.75%,
+        rgb(0% 0% 0% / 0.1391242789363899) 75%,
+        rgb(0% 0% 0% / 0.08005193415629097) 81.25%,
+        rgb(0% 0% 0% / 0.03615722205713878) 87.5%,
+        rgb(0% 0% 0% / 0.009126991808465545) 93.75%,
+        rgb(0% 0% 0% / 0) 100% );
+    }
+    #width-test, #lyrics {
+      font-size: var(--fontsize-lyrics);
+      white-space: nowrap;
+    }
+    #width-test {
+      position: absolute;
+      color: yellow;
+      z-index: -1;
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div id="background"></div>
+  <div id="width-test"></div>
+  <div id="lyrics">😍</div>
+
+  <script>
+    const openLPHost = '192.168.5.168:4316'
+    const openLPPollingInterval = 500
+    const background = document.getElementById('background')
+    const widthTest = document.getElementById('width-test')
+    const lyrics = document.getElementById('lyrics')
+    let itemID = null
+    let slideIndex = null
+    let intervalID = null
+
+    // extract values from :root style rule
+    const rootStyleRule = document.querySelector('style').sheet.cssRules[0]
+    const lyricsFontSize = Number(rootStyleRule.styleMap.get('--fontsize-lyrics')[0].match(/\d+(?=vw)/)[0])                   // strip units (vw) and convert to number
+    const slideTransitionTime = Number(rootStyleRule.styleMap.get('--opacity-transition-duration')[0].match(/\d+(?=ms)/)[0])  // strip units (ms) and convert to number
+
+    // function to replace straight quotes with curly quotes (sourced from https://gist.github.com/karbassi/6216484)
+    const curlify = t => {
+      return t
+        /* opening singles */
+        .replace(/(^|[-\u2014\s(\["])'/g, "$1\u2018")
+        /* closing singles & apostrophes */
+        .replace(/'/g, "\u2019")
+        /* opening doubles */
+        .replace(/(^|[-\u2014/\[(\u2018\s])"/g, "$1\u201c")
+        /* closing doubles */
+        .replace(/"/g, "\u201d")
+        /* em-dashes */
+        .replace(/--/g, "\u2014")
+    }
+
+    // function to change the current slide, optionally changing the font size as well
+    const changeSlide = (html, fontSize) => {
+      if (!html) {                                                                        // if we no longer want to display a slide
+        lyrics.style.opacity = 0
+        background.style.opacity = 0
+        setTimeout(() => {
+          lyrics.innerHTML = null
+        }, slideTransitionTime)
+      }
+      else if (lyrics.style.opacity == 0) {                                               // if we want to display a slide (and are not currently doing so)
+        lyrics.style.fontSize = fontSize
+        lyrics.innerHTML = curlify(html)
+        lyrics.style.opacity = 1
+        background.style.opacity = 1
+      }
+      else {                                                                              // if we just want to change the slide
+        lyrics.style.opacity = 0
+        setTimeout(() => {
+          lyrics.style.fontSize = fontSize
+          lyrics.innerHTML = curlify(html)
+          lyrics.style.opacity = 1
+        }, slideTransitionTime)
+      }
+    }
+
+    // function to retrieve the current item from OpenLP and if it's a song, render the current lyrics
+    const pollOpenLP = async () => {
+
+      let response = null
+      let json = null
+      
+      // retrieve current item from OpenLP
+      try {
+        response = await fetch("http://192.168.5.168:4316/api/v2/controller/live-items", {signal: AbortSignal.timeout(openLPPollingInterval - 50)})
+        if (response.ok)
+          json = await response.json()
+        else
+          throw new Error(`OpenLP server returned HTTP error ${response.status}`)
+      }
+      catch (e) {
+        clearInterval(intervalID)                                                         // stop polling
+        let message = ''                                                                  // assemble error message
+        if (e.name == 'AbortError') message = `No response from OpenLP on ${openLPHost}`
+        else if (e.name == 'TypeError') message = `No network connection`
+        else message = e.message
+        changeSlide(`❌ ${message}`, '2vw')                                               // display error message
+        return
+      }
+
+      // is this a different item from what we are already displaying?
+      if (json.id != itemID) {
+        itemID = json.id                                                                  // update
+        slideIndex = null                                                                 // reset
+
+        // if this item is a song
+        if (json.name == 'songs') {                                                       // yes, it is a song
+          widthTest.style.fontSize = null                                                 // reset
+          widthTest.innerHTML = curlify(json.slides.map(o => o.html).join('<br>'))        // render the entire song in a hidden element
+          let fs = lyricsFontSize;                                                        // standard size extracted from style rule
+          // if the song is wider than the body, reduce the font size until it fits
+          while (document.body.clientWidth * 0.92 < widthTest.clientWidth) {
+            fs = fs - 0.1                                                                 // reduce by 0.1vw each time
+            widthTest.style.fontSize = fs + 'vw'
+          }
+        }
+        else changeSlide(null)                                                            // no, it’s not a song, so clear the screen
+      }
+
+      // is this is different slide from what we are already displaying?
+      if (json.name == 'songs') {
+        const fetchedIndex = json.slides.findIndex(o => o.selected)
+        if (fetchedIndex != slideIndex) {
+          slideIndex = fetchedIndex
+          changeSlide(json.slides[slideIndex].html, widthTest.style.fontSize)             // change the current slide
+        }
+      }
+    }
+
+    // poll OpenLP
+    intervalID = setInterval(pollOpenLP, openLPPollingInterval)
+  </script>
+</body>
+</html>
+
