@@ -78,7 +78,7 @@
   <div id="lyrics">😍</div>
 
   <script>
-    const openLPHost = '192.168.5.168:4316'
+    const openLPHost = '127.0.0.1:4316'
     const openLPPollingInterval = 500
     const background = document.getElementById('background')
     const widthTest = document.getElementById('width-test')
@@ -140,7 +140,7 @@
       
       // retrieve current item from OpenLP
       try {
-        response = await fetch("http://192.168.5.168:4316/api/v2/controller/live-items", {signal: AbortSignal.timeout(openLPPollingInterval - 50)})
+        response = await fetch(`http://${openLPHost}/api/v2/controller/live-items`, {signal: AbortSignal.timeout(openLPPollingInterval - 50)})
         if (response.ok)
           json = await response.json()
         else
