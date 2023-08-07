@@ -71,22 +71,31 @@
       white-space: nowrap;
       visibility: hidden;
     }
+    #status {
+      position: absolute;
+      right: 1em;
+      bottom: 1em;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div id="background"></div>
   <div id="width-test"></div>
-  <div id="lyrics">😍</div>
+  <div id="lyrics"></div>
+  <div id="status"></div>
 
   <script>
     const openLPHost = '127.0.0.1:4316'
-    const openLPPollingInterval = 500
+    const openLPPollTimeout = 1000                                                        // time to wait for OpenLP to respond
+    const openLPPollFast = 500                                                            // time delay after a successful poll
+    const openLPPollSlow = 5000                                                           // time delay after an unsuccessful poll
     const background = document.getElementById('background')
     const widthTest = document.getElementById('width-test')
     const lyrics = document.getElementById('lyrics')
+    const status = document.getElementById('status')
     let itemID = null
     let slideIndex = null
-    let intervalID = null
 
     // extract values from :root style rule
     const rootStyleRule = document.querySelector('style').sheet.cssRules[0]
@@ -107,6 +116,21 @@
         /* em-dashes */
         .replace(/--/g, "\u2014")
     }
+
+    // function to manage the display of errors
+    const errorDisplay = (message, click = false) => {
+      if (click)                                                                          // if the user clicked for more information
+        status.innerHTML = status.dataset.message                                         // display the error message text
+      else {
+        status.innerHTML = message ? '🟠' : ''                                            // if we received a message, display an orange circle, otherwise display nothing
+        status.dataset.message = message ? message : ''                                   // if we received a message, store it in case the user clicks for more information
+      }
+    }
+
+    // add a click handler for the status icon
+    status.addEventListener('click', evt => {                                             
+      errorDisplay(null, true)                                                            // display more information about the error to the video team
+    })
 
     // function to change the current slide, optionally changing the font size as well
     const changeSlide = (html, fontSize) => {
@@ -133,6 +157,7 @@
       }
     }
 
+    // functions to determine whether the current slide contains meta information such as CCLI details
     const isCCLI = i => {
       return i.tag.startsWith('I') && i.html.match(/©|ccli|lyrics|music|publish/i)
     }
@@ -148,22 +173,24 @@
       
       // retrieve current item from OpenLP
       try {
-        response = await fetch(`http://${openLPHost}/api/v2/controller/live-items`, {signal: AbortSignal.timeout(openLPPollingInterval - 50)})
+        response = await fetch(`http://${openLPHost}/api/v2/controller/live-items`, {signal: AbortSignal.timeout(openLPPollTimeout)})
         if (response.ok)
           json = await response.json()
         else
           throw new Error(`OpenLP server returned HTTP error ${response.status}`)
       }
       catch (e) {
-        clearInterval(intervalID)                                                         // stop polling
         let message = ''                                                                  // assemble error message
-        if (e.name == 'AbortError') message = `No response from OpenLP on ${openLPHost}`
-        else if (e.name == 'TypeError') message = `No network connection`
+        if (e.name == 'AbortError' || e.name == 'TypeError') message = `No response from OpenLP on ${openLPHost}`
         else message = e.message
-        changeSlide(`❌ ${message}`, '2vw')                                               // display error message
+        errorDisplay(message)                                                             // subtly alert the video team that an error occurred
+        setTimeout(pollOpenLP, openLPPollSlow)                                            // wait a while then retry
         return
       }
 
+      // our call to OpenLP succeeded, so hide any errors which may have been displayed previously
+      errorDisplay(null)
+           
       // is this a different item from what we are already displaying?
       if (json.id != itemID) {
         itemID = json.id                                                                  // update
@@ -192,10 +219,12 @@
           changeSlide(s.html, isCCLI(s) ? '1.2vw' : widthTest.style.fontSize)             // change the current slide
         }
       }
+
+      // wait a short while and then poll again
+      setTimeout(pollOpenLP, openLPPollFast)
     }
 
-    // poll OpenLP
-    intervalID = setInterval(pollOpenLP, openLPPollingInterval)
+    pollOpenLP()
   </script>
 </body>
 </html>
