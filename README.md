@@ -33,15 +33,16 @@ identifies meta slides as those:
 
 ## Connectivity
 
-The page polls the `live-items` endpoint of the [OpenLP API](https://gitlab.com/openlp/wiki/-/wikis/Documentation/HTTP-API).
+The page polls the `/controller/live-items` endpoint of the [OpenLP API](https://gitlab.com/openlp/wiki/-/wikis/Documentation/HTTP-API).
+
 When the page sends a request to OpenLP, it waits up to 1 second for a response. If no
-response is received within this time, the poll is aborted and treated as a failed poll.
+response is received within this time, the poll is aborted and treated as failed.
 
 When a poll **succeeds** (OpenLP responds successfully within the timeout period), the page
 processes the response and then waits 500 milliseconds before polling again.
 
-When a poll **fails**, a subtle orange circle appears in the lower right corner to alert
+When a poll **fails**, a small orange dot appears in the lower right corner to alert
 the operator that connectivity has been lost, then the page waits 5 seconds before polling
-again. The operator can click on the orange circle to see error details. As soon as
-connectivity is re-established, the orange circle disappears and polling resumes at the
-faster rate. 
+again. The operator can click on the orange dot to see error details. As soon as
+connectivity is re-established, the orange dot disappears and polling resumes at the
+faster rate.
