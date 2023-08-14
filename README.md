@@ -1,7 +1,8 @@
 # overlay-lyrics
 
-Single-page HTML app which uses the OpenLP API to continuously display song lyrics. We use
-this app within OBS to overlay song lyrics onto our church livestream.
+Single-page HTML app which uses the [OpenLP](https://openlp.org/) API to continuously
+display song lyrics. We use this app within [OBS Studio](https://obsproject.com/) to
+overlay song lyrics onto our church livestream.
 
 ## Setup
 
@@ -33,10 +34,10 @@ identifies meta slides as those:
 
 ## Connectivity
 
-OpenLP provides real-time updates via a [WebSocket connection](https://gitlab.com/openlp/wiki/-/wikis/Documentation/websockets).
-Every operation within OpenLP sends a message over this connection; although each message
-contains very limited information. However, receipt of these messages is a useful trigger
-to request more detailed information from OpenLP.
+OpenLP provides real-time status updates via a [WebSocket connection](https://gitlab.com/openlp/wiki/-/wikis/Documentation/websockets).
+Every operation within OpenLP triggers a message over this connection; although each
+message contains very limited information. However, receipt of these messages is a useful
+trigger to request more detailed information from OpenLP.
 
 So, whenever the app receives a message via the WebSocket, it calls the `/controller/live-items`
 endpoint of the [OpenLP API](https://gitlab.com/openlp/wiki/-/wikis/Documentation/HTTP-API).
