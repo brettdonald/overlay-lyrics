@@ -34,30 +34,28 @@
     }
     #background {
       position: absolute;
-      top: 20%;
+      top: 40%;
       left: 0;
+      bottom: 0;
       width: 100%;
-      height: 100%;
       z-index: -2;
-      /* generated using non-boring-gradients.netlify.app using black with opacity 0.95 to
-      black with opacity 0, zero degrees rotation, easeInOutSine, sRGB */
-      background-image: linear-gradient(0deg,
-        rgb(0% 0% 0% / 0.95) 0%,
-        rgb(0% 0% 0% / 0.9408730081915344) 6.25%,
-        rgb(0% 0% 0% / 0.9138427779428612) 12.5%,
-        rgb(0% 0% 0% / 0.869948065843709) 18.75%,
-        rgb(0% 0% 0% / 0.81087572106361) 25%,
-        rgb(0% 0% 0% / 0.738895860684311) 31.25%,
-        rgb(0% 0% 0% / 0.6567746303734177) 37.5%,
-        rgb(0% 0% 0% / 0.5676679029576609) 43.75%,
-        rgb(0% 0% 0% / 0.47500000000000003) 50%,
-        rgb(0% 0% 0% / 0.38233209704233906) 56.25%,
-        rgb(0% 0% 0% / 0.2932253696265824) 62.5%,
-        rgb(0% 0% 0% / 0.21110413931568905) 68.75%,
-        rgb(0% 0% 0% / 0.1391242789363899) 75%,
-        rgb(0% 0% 0% / 0.08005193415629097) 81.25%,
-        rgb(0% 0% 0% / 0.03615722205713878) 87.5%,
-        rgb(0% 0% 0% / 0.009126991808465545) 93.75%,
+      background-image: linear-gradient(0deg,                                             /* generated using non-boring-gradients.netlify.app using black with opacity 0.8 to black with opacity 0, zero degrees rotation, easeInOutSine, sRGB */
+        rgb(0% 0% 0% / 0.8) 0%,
+        rgb(0% 0% 0% / 0.7923141121612922) 6.25%,
+        rgb(0% 0% 0% / 0.7695518130045147) 12.5%,
+        rgb(0% 0% 0% / 0.7325878449210181) 18.75%,
+        rgb(0% 0% 0% / 0.682842712474619) 25%,
+        rgb(0% 0% 0% / 0.622228093207841) 31.25%,
+        rgb(0% 0% 0% / 0.553073372946036) 37.5%,
+        rgb(0% 0% 0% / 0.47803612880645135) 43.75%,
+        rgb(0% 0% 0% / 0.4000000000000001) 50%,
+        rgb(0% 0% 0% / 0.32196387119354875) 56.25%,
+        rgb(0% 0% 0% / 0.24692662705396418) 62.5%,
+        rgb(0% 0% 0% / 0.17777190679215926) 68.75%,
+        rgb(0% 0% 0% / 0.11715728752538102) 75%,
+        rgb(0% 0% 0% / 0.0674121550789819) 81.25%,
+        rgb(0% 0% 0% / 0.03044818699548535) 87.5%,
+        rgb(0% 0% 0% / 0.007685887838707828) 93.75%,
         rgb(0% 0% 0% / 0) 100% );
     }
     #width-test, #lyrics {
@@ -86,16 +84,18 @@
   <div id="status"></div>
 
   <script>
-    const openLPHost = '127.0.0.1:4316'
-    const openLPPollTimeout = 1000                                                        // time to wait for OpenLP to respond
-    const openLPPollFast = 500                                                            // time delay after a successful poll
-    const openLPPollSlow = 5000                                                           // time delay after an unsuccessful poll
+    const openLPHost = '127.0.0.1'
+    const openLPRequestPort = '4316'                                                      // port for regular API requests
+    const openLPWebSocketPort = '4317'                                                    // port for WebSocket connection/messages
+    const openLPFetchTimeout = 1000                                                       // time to wait for OpenLP to respond
+    const openLPRetry = 5000                                                              // retry delay after an unsuccessful fetch
     const background = document.getElementById('background')
     const widthTest = document.getElementById('width-test')
     const lyrics = document.getElementById('lyrics')
     const status = document.getElementById('status')
     let itemID = null
     let slideIndex = null
+    let openLPWebSocket = null
 
     // extract values from :root style rule
     const rootStyleRule = document.querySelector('style').sheet.cssRules[0]
@@ -105,16 +105,11 @@
     // function to replace straight quotes with curly quotes (sourced from https://gist.github.com/karbassi/6216484)
     const curlify = t => {
       return t
-        /* opening singles */
-        .replace(/(^|[-\u2014\s(\["])'/g, "$1\u2018")
-        /* closing singles & apostrophes */
-        .replace(/'/g, "\u2019")
-        /* opening doubles */
-        .replace(/(^|[-\u2014/\[(\u2018\s])"/g, "$1\u201c")
-        /* closing doubles */
-        .replace(/"/g, "\u201d")
-        /* em-dashes */
-        .replace(/--/g, "\u2014")
+        .replace(/(^|[-\u2014\s(\["])'/g, "$1\u2018")                                     // opening singles
+        .replace(/'/g, "\u2019")                                                          // closing singles & apostrophes
+        .replace(/(^|[-\u2014/\[(\u2018\s])"/g, "$1\u201c")                               // opening doubles
+        .replace(/"/g, "\u201d")                                                          // closing doubles
+        .replace(/--/g, "\u2014")                                                         // em-dashes
     }
 
     // function to manage the display of errors
@@ -166,14 +161,17 @@
     }
 
     // function to retrieve the current item from OpenLP and if it’s a song, render the current lyrics
-    const pollOpenLP = async () => {
+    const fetchOpenLP = async () => {
 
+      // if the websocket connection isn’t open, abort
+      if (openLPWebSocket.readyState != WebSocket.OPEN) return
+      
       let response = null
       let json = null
       
       // retrieve current item from OpenLP
       try {
-        response = await fetch(`http://${openLPHost}/api/v2/controller/live-items`, {signal: AbortSignal.timeout(openLPPollTimeout)})
+        response = await fetch(`http://${openLPHost}:${openLPRequestPort}/api/v2/controller/live-items`, {signal: AbortSignal.timeout(openLPFetchTimeout)})
         if (response.ok)
           json = await response.json()
         else
@@ -184,13 +182,13 @@
         if (e.name == 'AbortError' || e.name == 'TypeError') message = `No response from OpenLP on ${openLPHost}`
         else message = e.message
         errorDisplay(message)                                                             // subtly alert the video team that an error occurred
-        setTimeout(pollOpenLP, openLPPollSlow)                                            // wait a while then retry
+        setTimeout(fetchOpenLP, openLPRetry)                                              // wait a while then retry
         return
       }
 
       // our call to OpenLP succeeded, so hide any errors which may have been displayed previously
       errorDisplay(null)
-           
+
       // is this a different item from what we are already displaying?
       if (json.id != itemID) {
         itemID = json.id                                                                  // update
@@ -219,12 +217,30 @@
           changeSlide(s.html, isCCLI(s) ? '1.2vw' : widthTest.style.fontSize)             // change the current slide
         }
       }
-
-      // wait a short while and then poll again
-      setTimeout(pollOpenLP, openLPPollFast)
     }
 
-    pollOpenLP()
+    /***** WebSockets documentation *****
+    OpenLP: https://gitlab.com/openlp/wiki/-/wikis/Documentation/websockets
+    Standard: https://websockets.spec.whatwg.org/#websocket-ready-state */
+
+    // function to connect to the OpenLP WebSocket and start listening for messages
+    const initiateListenOpenLP = () => {
+      openLPWebSocket = new WebSocket(`ws://${openLPHost}:${openLPWebSocketPort}`)
+      openLPWebSocket.onopen = evt => {
+        console.info(`Connected to OpenLP on ${openLPHost}`)
+        errorDisplay(null)
+      }
+      openLPWebSocket.onclose = evt => {
+        errorDisplay(`Failed to connect to OpenLP on ${openLPHost}`)
+        setTimeout(initiateListenOpenLP, openLPRetry)
+      }
+      openLPWebSocket.onmessage = evt => {
+        fetchOpenLP()                                                                     // fetch the current state from OpenLP. We ignore the message contents; the arrival of the message is simply a trigger. Should the message contents be needed in future, the OpenLP documentation (link above) contains a code sample.
+      }
+    }
+    
+    initiateListenOpenLP()
+    
   </script>
 </body>
 </html>

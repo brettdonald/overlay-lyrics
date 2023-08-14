@@ -33,16 +33,20 @@ identifies meta slides as those:
 
 ## Connectivity
 
-The page polls the `/controller/live-items` endpoint of the [OpenLP API](https://gitlab.com/openlp/wiki/-/wikis/Documentation/HTTP-API).
+OpenLP provides real-time updates via a [WebSocket connection](https://gitlab.com/openlp/wiki/-/wikis/Documentation/websockets).
+Every operation within OpenLP sends a message over this connection; although each message
+contains very limited information. However, receipt of these messages is a useful trigger
+to request more detailed information from OpenLP.
 
-When the page sends a request to OpenLP, it waits up to 1 second for a response. If no
-response is received within this time, the poll is aborted and treated as failed.
+So, whenever the page receives a message via the WebSocket, it calls the `/controller/live-items`
+endpoint of the [OpenLP API](https://gitlab.com/openlp/wiki/-/wikis/Documentation/HTTP-API).
+This endpoint responds with detailed information on the currently-displayed item.
 
-When a poll **succeeds** (OpenLP responds successfully within the timeout period), the page
-processes the response and then waits 500 milliseconds before polling again.
+If the WebSocket connection cannot be established, a small orange dot appears in the lower
+right corner to alert the operator that there is no connection to OpenLP. The operator can
+click this orange dot to see error details. This orange dot will also appear if the
+connection is terminated, or if a fetch request generates an error or times out.
 
-When a poll **fails**, a small orange dot appears in the lower right corner to alert
-the operator that connectivity has been lost, then the page waits 5 seconds before polling
-again. The operator can click on the orange dot to see error details. As soon as
-connectivity is re-established, the orange dot disappears and polling resumes at the
-faster rate.
+Following an error, the page will automatically continue attempting to connect, reconnect
+or refetch at a rate of once every 5 seconds. As soon as connectivity is established,
+re-established or the fetch succeeds, the orange dot disappears.
