@@ -221,10 +221,10 @@
 
     /***** WebSockets documentation *****
     OpenLP: https://gitlab.com/openlp/wiki/-/wikis/Documentation/websockets
-    Standard: https://websockets.spec.whatwg.org/#websocket-ready-state */
+    Spec:   https://websockets.spec.whatwg.org/#websocket-ready-state                     */
 
     // function to connect to the OpenLP WebSocket and start listening for messages
-    const initiateListenOpenLP = () => {
+    const connectOpenLP = () => {
       openLPWebSocket = new WebSocket(`ws://${openLPHost}:${openLPWebSocketPort}`)
       openLPWebSocket.onopen = evt => {
         console.info(`Connected to OpenLP on ${openLPHost}`)
@@ -232,14 +232,14 @@
       }
       openLPWebSocket.onclose = evt => {
         errorDisplay(`Failed to connect to OpenLP on ${openLPHost}`)
-        setTimeout(initiateListenOpenLP, openLPRetry)
+        setTimeout(connectOpenLP, openLPRetry)
       }
       openLPWebSocket.onmessage = evt => {
         fetchOpenLP()                                                                     // fetch the current state from OpenLP. We ignore the message contents; the arrival of the message is simply a trigger. Should the message contents be needed in future, the OpenLP documentation (link above) contains a code sample.
       }
     }
     
-    initiateListenOpenLP()
+    connectOpenLP()
     
   </script>
 </body>

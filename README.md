@@ -12,7 +12,7 @@ overlay song lyrics onto our church livestream.
 4. Start OpenLP and display some song lyrics
 5. The song lyrics will be visible in the OBS scene
 
-## Logic
+## Display Logic
 
 The app contains some smarts to help figure out the best font size to use when displaying
 each song. The default font size is **4vw**, but if, at that size, any line of the song is
@@ -32,14 +32,14 @@ identifies meta slides as those:
   * music
   * publish
 
-## Connectivity
+## Connectivity Logic
 
 OpenLP provides real-time status updates via a [WebSocket connection](https://gitlab.com/openlp/wiki/-/wikis/Documentation/websockets).
 Every operation within OpenLP triggers a message over this connection; although each
 message contains very limited information. However, receipt of these messages is a useful
 trigger to request more detailed information from OpenLP.
 
-So, whenever the app receives a message via the WebSocket, it calls the `/controller/live-items`
+Whenever the app receives a message via the WebSocket, it calls the `/controller/live-items`
 endpoint of the [OpenLP API](https://gitlab.com/openlp/wiki/-/wikis/Documentation/HTTP-API).
 This endpoint responds with detailed information on the currently-displayed item.
 
@@ -48,6 +48,7 @@ right corner to alert the operator that there is no connection to OpenLP. The op
 click this orange dot to see error details. This orange dot will also appear if the
 connection is terminated, or if a fetch request generates an error or times out.
 
-Following an error, the app will automatically continue attempting to connect, reconnect
-or refetch at a rate of once every 5 seconds. As soon as connectivity is established,
-re-established or the fetch succeeds, the orange dot disappears.
+Following a connection failure or fetch error, the app will automatically continue
+attempting to connect, reconnect or refetch at a rate of once every 5 seconds. As soon as
+connectivity is established, re-established or the fetch succeeds, the orange dot
+disappears.
