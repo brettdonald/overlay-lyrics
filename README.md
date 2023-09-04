@@ -2,7 +2,12 @@
 
 Single-page HTML app which uses the [OpenLP](https://openlp.org/) API to continuously
 display song lyrics. We use this app within [OBS Studio](https://obsproject.com/) to
-overlay song lyrics onto our church livestream.
+overlay song lyrics onto our church livestream. 
+
+https://github.com/brettdonald/overlay-lyrics/assets/4504348/608f7d14-d256-4217-8cfb-f4d7249164e6
+
+This app displays the lyrics on a webpage with a plain background, which OBS automatically
+makes transparent. Any backgrounds configured within OpenLP for the house display are ignored.
 
 ## Setup
 
