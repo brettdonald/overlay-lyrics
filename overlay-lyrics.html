@@ -154,7 +154,7 @@
 
     // functions to determine whether the current slide contains meta information such as CCLI details
     const isCCLI = i => {
-      return i.tag.startsWith('I') && i.html.match(/©|ccli|lyrics|music|publish/i)
+      return (i.tag.startsWith('I') || i.tag.startsWith('O')) && i.html.match(/©|ccli|lyrics|music|publish/i)
     }
     const notCCLI = i => {
       return !isCCLI(i)
