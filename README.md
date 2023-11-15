@@ -24,10 +24,10 @@ each song. The default font size is **4vw**, but if, at that size, any line of t
 wider than the screen, the font size of the entire song is reduced in 0.1vw steps until
 all lines of the song fit the screen.
 
-Many songs in our database include meta information about the song on intro slides. Slides
-containing meta information are rendered in a smaller font size (1.2vw) and are excluded
-when performing the width calculation described in the previous paragraph. The app
-identifies meta slides as those:
+Many songs in our database include meta information about the song on slides tagged with
+a verse type of Intro or Other. Slides containing meta information are rendered in a smaller
+font size (1.2vw) and are excluded when performing the width calculation described in the
+previous paragraph. The app identifies meta slides as those:
 
 * which are tagged as an Intro or Other slide in OpenLP, **and**
 * which contain any of the following strings:
