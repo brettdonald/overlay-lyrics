@@ -29,7 +29,7 @@ a verse type of Intro or Other. Slides containing meta information are rendered 
 font size (1.2vw) and are excluded when performing the width calculation described in the
 previous paragraph. The app identifies meta slides as those:
 
-* which are tagged as an Intro or Other slide in OpenLP, **and**
+* with a verse type of Intro or Other, **and**
 * which contain any of the following strings:
   * ©
   * ccli
