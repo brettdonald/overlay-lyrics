@@ -29,7 +29,7 @@ containing meta information are rendered in a smaller font size (1.2vw) and are 
 when performing the width calculation described in the previous paragraph. The app
 identifies meta slides as those:
 
-* which are tagged as an Intro slide in OpenLP, **and**
+* which are tagged as an Intro or Other slide in OpenLP, **and**
 * which contain any of the following strings:
   * ©
   * ccli
