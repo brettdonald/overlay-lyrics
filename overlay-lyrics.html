@@ -28,6 +28,7 @@
          0px -6px 12px rgb(0,0,0,0.7),
          0px 6px 12px rgb(0,0,0,0.7),
          6px 0 12px rgb(0,0,0,0.7);
+      &:has(#lyrics img) {padding-bottom: 0;}
     }
     #background, #lyrics {
       transition: opacity var(--opacity-transition-duration);
@@ -75,6 +76,10 @@
       bottom: 1em;
       cursor: pointer;
     }
+    #lyrics img {
+      display: block;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -84,7 +89,7 @@
   <div id="status"></div>
 
   <script>
-    const openLPHost = '127.0.0.1'
+    const openLPHost = '127.0.0.1'                                                        // castle hill church PC = 192.168.35.11
     const openLPRequestPort = '4316'                                                      // port for regular API requests
     const openLPWebSocketPort = '4317'                                                    // port for WebSocket connection/messages
     const openLPFetchTimeout = 1000                                                       // time to wait for OpenLP to respond
@@ -128,8 +133,9 @@
     })
 
     // function to change the current slide, optionally changing the font size as well
-    const changeSlide = (html, fontSize) => {
-      if (!html) {                                                                        // if we no longer want to display a slide
+    const changeSlide = (html, fontSize, isSong, isSpacer) => {
+      console.log('changing slide with html: ' + html)
+      if (!html && !isSpacer) {                                                           // if we no longer want to display a slide
         lyrics.style.opacity = 0
         background.style.opacity = 0
         setTimeout(() => {
@@ -138,15 +144,16 @@
       }
       else if (lyrics.style.opacity == 0) {                                               // if we want to display a slide (and are not currently doing so)
         lyrics.style.fontSize = fontSize
-        lyrics.innerHTML = curlify(html)
+        lyrics.innerHTML = isSong ? curlify(html) : html
         lyrics.style.opacity = 1
-        background.style.opacity = 1
+        background.style.opacity = isSong ? 1 : 0
       }
       else {                                                                              // if we just want to change the slide
         lyrics.style.opacity = 0
+        background.style.opacity = isSong ? 1 : 0
         setTimeout(() => {
           lyrics.style.fontSize = fontSize
-          lyrics.innerHTML = curlify(html)
+          lyrics.innerHTML = isSong ? curlify(html) : html
           lyrics.style.opacity = 1
         }, slideTransitionTime)
       }
@@ -154,10 +161,13 @@
 
     // functions to determine whether the current slide contains meta information such as CCLI details
     const isCCLI = i => {
-      return (i.tag.startsWith('I') || i.tag.startsWith('O')) && (i.html.match(/©|ccli|lyrics|music|publish/i) != null)
+      return typeof i.tag === 'string' && (i.tag.startsWith('I') || i.tag.startsWith('O')) && (i.html.match(/©|ccli|lyrics|music|publish/i) != null)
     }
     const notCCLI = i => {
       return !isCCLI(i)
+    }
+    const isSpacer = i => {
+      return typeof i.tag === 'string' && i.tag.startsWith('O') && !i.html
     }
 
     // function to retrieve the current item from OpenLP and if it’s a song, render the current lyrics
@@ -205,16 +215,17 @@
             widthTest.style.fontSize = fs + 'vw'
           }
         }
-        else changeSlide(null)                                                            // no, it’s not a song, so clear the screen
+        else if (json.name != 'images') changeSlide(null)                               // it’s neither a song nor an image, so clear the screen
       }
 
       // is this is different slide from what we are already displaying?
-      if (json.name == 'songs') {
+      if (json.name == 'songs' || json.name == 'images') {
         const fetchedIndex = json.slides.findIndex(o => o.selected)
         if (fetchedIndex != slideIndex) {
           slideIndex = fetchedIndex
           const s = json.slides[slideIndex]
-          changeSlide(s.html, isCCLI(s) ? '1.2vw' : widthTest.style.fontSize)             // change the current slide
+          let html = json.name == 'songs' ? s.html : '<img src="images/' + s.title + '" onerror="this.onerror=null;this.src=\'blank.svg\';">'
+          changeSlide(html, isCCLI(s) ? '1.2vw' : widthTest.style.fontSize, json.name == 'songs', isSpacer(s))          // change the current slide
         }
       }
     }
