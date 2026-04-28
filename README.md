@@ -6,14 +6,14 @@ overlay song lyrics onto our church livestream.
 
 https://github.com/brettdonald/overlay-lyrics/assets/4504348/608f7d14-d256-4217-8cfb-f4d7249164e6
 
-To ensure the lyrics are clear and readable when overlaid above the video, this app uses
+To ensure the lyrics are clear and readable when rendered on top of the video, this app uses
 a full-screen subtle gradient background, fully transparent at the top and semi-transparent
 black at the bottom.
 
 ## Setup
 
 1. Download the app and save it onto the machine running OBS
-2. Edit the app code to point to your OpenLP server (edit the `openLPHost` constant on line 87)
+2. Edit the app code to point to your OpenLP server (edit the `openLPHost` constant on line 92)
 3. In your OBS scene, add a Browser source, selecting the Local File option
 4. Start OpenLP and display some song lyrics
 5. The song lyrics will be visible in the OBS scene
