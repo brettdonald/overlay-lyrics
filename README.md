@@ -1,4 +1,4 @@
-# overlay-lyrics
+# Overlay Lyrics
 
 Single-page HTML app which uses the [OpenLP](https://openlp.org/) API to continuously
 display song lyrics. We use this app within [OBS Studio](https://obsproject.com/) to
