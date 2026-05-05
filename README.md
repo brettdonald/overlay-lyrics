@@ -13,7 +13,7 @@ black at the bottom.
 ## Setup
 
 1. Download the app and save it onto the machine running OBS
-2. Edit the app code to point to your OpenLP server (edit the `openLPHost` constant on line 92)
+2. Edit the app code to point to your OpenLP server (edit the `openLPHost` constant on line 98)
 3. In your OBS scene, add a Browser source, selecting the Local File option
 4. Start OpenLP and display some song lyrics
 5. The song lyrics will be visible in the OBS scene
